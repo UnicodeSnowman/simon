@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>bREPL Connection</title>
+  <!--[if lt IE 9]>
+  <script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+  <![endif]-->
+  <style>
+    .container {
+      width: 100%;
+    }
+
+    .controls {
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-around;
+      flex-wrap: wrap;
+      border: 1px solid gray;
+      border-radius: 30px;
+      width: 550px;
+      height: 550px;
+      background: lightgray;
+    }
+
+    button {
+      opacity: 0.8;
+      flex-basis: 50%;
+      box-sizing: border-box;
+      border: 15px solid lightgray;
+      border-radius: 30px;
+    }
+
+    button:hover {
+      cursor: pointer;
+      opacity: 0.6;
+    }
+
+    button:focus {
+      outline: none;
+    }
+
+    #red { background: red; }
+    #yellow { background: yellow; }
+    #green { background: green; }
+    #blue { background: blue; }
+
+  </style>
+</head>
+<body>
+  <div id="test" class="container">
+    <h1 id="pattern-container"></h1>
+    <div class="controls">
+      <button id="red" class="button"></button>
+      <button id="yellow" class="button"></button>
+      <button id="green" class="button"></button>
+      <button id="blue" class="button"></button>
+    </div>
+  </div>
+  <script src="js/cljs_async.js"></script>
+</body>
+</html>

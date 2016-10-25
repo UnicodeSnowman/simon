@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>bREPL Connection</title>
+  <!--[if lt IE 9]>
+  <script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+  <![endif]-->
+  <style>
+    .container {
+      width: 100%;
+    }
+
+    .controls {
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-around;
+      flex-wrap: wrap;
+      border: 1px solid gray;
+      border-radius: 30px;
+      width: 550px;
+      height: 550px;
+      background: lightgray;
+    }
+
+    .btn {
+      opacity: 0.8;
+      flex-basis: 50%;
+      box-sizing: border-box;
+      border-radius: 30px;
+    }
+
+    .btn:hover {
+      cursor: pointer;
+      opacity: 0.6;
+    }
+
+    .red { background: red; }
+    .yellow { background: yellow; }
+    .green { background: green; }
+    .blue { background: blue; }
+
+  </style>
+</head>
+<body>
+  <div id="test" class="container">
+    <h1 id="pattern-container"></h1>
+    <div id="controls">
+      <button id="red">RED</button>
+      <button id="yellow">YELLOW</button>
+      <button id="green">GREEN</button>
+      <button id="blue">BLUE</button>
+    </div>
+    <div class="controls">
+      <div class="btn red"></div>
+      <div class="btn yellow"></div>
+      <div class="btn green"></div>
+      <div class="btn blue"></div>
+    </div>
+    <!--
+    <div id="menu">
+      <ul>
+        <li>One</li>
+        <li>Two</li>
+        <li>Three</li>
+      </ul>
+    </div>
+    -->
+  </div>
+  <script src="js/cljs_async.js"></script>
+</body>
+</html>
