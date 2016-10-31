@@ -6,7 +6,7 @@
 ;;; strongly suggested to add them to the leiningen :source-paths.
 (ns cljs-async.core
   (:require-macros [cljs.core.async.macros :refer [go go-loop]])
-  (:require [cljs.core.async :as async :refer [put! alts! timeout chan]]))
+  (:require [cljs.core.async :as async :refer [put! alts! <! timeout chan]]))
 
   (defn listen [el evt]
     (let [c (chan)]
@@ -20,33 +20,26 @@
         (.addEventListener el evt (fn [e] (put! c (keyword (-> e .-target .-id))))))
       c))
 
-;  (defn open [e cancel]
-;    (go
-;      (let [[_ ch] (alts! [cancel (timeout 500)])]
-;        (if-not (= ch cancel)
-;          (do 
-;            (.log js/console "add")
-;            (<! cancel)
-;            (.log js/console "remove"))
-;          (.log js/console "cancelled")))))
-;  
-;  (defn app []
-;    (let [over-channel (listen (.getElementById js/document "menu") "mouseover")
-;          out-channel (listen (.getElementById js/document "menu") "mouseout")]
-;      (go-loop []
-;        (let [e (<! over-channel)]
-;          (open e out-channel))
-;        (recur))))
-;  (app)
-
+(def buttons [:red :yellow :blue :green])
 (defn rand-button []
-  (rand-nth [:red :yellow :green :blue]))
+  (rand-nth buttons))
 
-(def pattern-container (.getElementById js/document "pattern-container"))
-(defn restart-game [] (conj [] (rand-button)))
+(defn new-game [] (conj [] (rand-button)))
 
-(defn show-pattern [pattern]
-  (set! (.-innerText pattern-container) (str pattern)))
+(defn show-pattern
+  ([pattern]
+   (show-pattern pattern 500))
+  ([pattern ms]
+    (go
+      (doseq [btn pattern]
+        (let [elem (.getElementById js/document (name btn))]
+         (<! (timeout ms))
+         (set! (.-className elem) "button active")
+         (<! (timeout ms))
+         (set! (.-className elem) "button"))))))
+
+(defn demo []
+    (show-pattern (take 12 (cycle buttons)) 50))
 
 (defn correct-so-far [clicks pattern]
   (every?
@@ -54,20 +47,24 @@
     (zipmap clicks pattern)))
 
 (defn start []
-  (let [button-channel (listen-query ".controls button" "click")]
+  (let [button-channel (listen-query ".controls button" "click")
+        initial-pattern (new-game)]
+    (show-pattern initial-pattern)
     (go-loop [clicks []
-              pattern (restart-game)
-              pattern-updated? true]
-
-      ; cleaner way to tell if the pattern was updated?
-      (if pattern-updated? (show-pattern pattern))
-
+              pattern initial-pattern]
       (let [clicked (<! button-channel)]
         (cond
           (= pattern (conj clicks clicked))
-            (recur [] (conj pattern (rand-button)) true)
+            (let [next-pattern (conj pattern (rand-button))]
+              (show-pattern next-pattern)
+              (recur [] next-pattern))
           (correct-so-far (conj clicks clicked) pattern)
-            (recur (conj clicks clicked) pattern false)
-          :else (recur [] (restart-game) true))))))
+            (recur (conj clicks clicked) pattern)
+          :else (let [initial-pattern (new-game)]
+                  (show-pattern initial-pattern)
+                  (recur [] initial-pattern)))))))
 
-(start)
+(go
+  (demo)
+  (<! (timeout 1500))
+  (start))
