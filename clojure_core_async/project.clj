@@ -4,8 +4,12 @@
             :url "http://www.eclipse.org/legal/epl-v10.html"
             :distribution :repo}
   :source-paths ["src/clj" "src/cljs"]
-  :dependencies [[org.clojure/clojure "1.8.0"]
+  :repl-options {:init-ns weasel.repl.websocket ; probably don't want init-ns, just load the lib...
+                 :nrepl-middleware [cemerick.piggieback/wrap-cljs-repl]}
+  :dependencies [[org.clojure/clojure "1.9.0-alpha13"]
                  [org.clojure/core.async "0.2.395"]
+                 [com.cemerick/piggieback "0.2.1"]
+                 [weasel "0.7.0" :exclusions [org.clojure/clojurescript]]
                  [org.clojure/clojurescript "1.9.293"]]
   :plugins [[lein-cljsbuild "1.1.4"]]
   :cljsbuild {

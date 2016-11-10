@@ -4,9 +4,17 @@
 ;;; if you can add files containing macros and compile-time only
 ;;; functions in the :source-paths setting of the :builds, it is
 ;;; strongly suggested to add them to the leiningen :source-paths.
+
+;(cemerick.piggieback/cljs-repl 
+;    (weasel.repl.websocket/repl-env :ip "0.0.0.0" :port 9001))
+
 (ns cljs-async.core
   (:require-macros [cljs.core.async.macros :refer [go go-loop]])
-  (:require [cljs.core.async :as async :refer [put! alts! <! timeout chan]]))
+  (:require [cljs.core.async :as async :refer [put! alts! <! timeout chan]]
+            [weasel.repl :as repl]))
+
+  (when-not (repl/alive?)
+    (repl/connect "ws://localhost:9001"))
 
   (defn listen [el evt]
     (let [c (chan)]
@@ -68,3 +76,23 @@
   (demo)
   (<! (timeout 1500))
   (start))
+
+(defonce synth
+  (let [audio-context (js/AudioContext.)
+        oscillator (.createOscillator audio-context)
+        gain-node (.createGain audio-context)]
+    (set! (.-type "square") oscillator)
+    (.connect oscillator gain-node)
+    (.connect gain-node (.-destination audio-context))
+    oscillator))
+
+(defn play-sound [s f]
+  (set! (-> s .-frequency .-value) f)
+  (.start s))
+
+; (go-loop []
+;   (<! (timeout 1000))
+;   (play-sound synth 220)
+;   (<! (timeout 1000))
+;   (.stop synth) ; cannot call start more than once... disconnect instead?
+;   (recur))
