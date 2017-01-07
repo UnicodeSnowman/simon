@@ -5,8 +5,7 @@
 ;;; functions in the :source-paths setting of the :builds, it is
 ;;; strongly suggested to add them to the leiningen :source-paths.
 
-;(cemerick.piggieback/cljs-repl 
-;    (weasel.repl.websocket/repl-env :ip "0.0.0.0" :port 9001))
+;(cemerick.piggieback/cljs-repl (weasel.repl.websocket/repl-env :ip "0.0.0.0" :port 9001))
 
 (ns cljs-async.core
   (:require-macros [cljs.core.async.macros :refer [go go-loop]])
@@ -25,14 +24,32 @@
     (let [c (chan)
           els (.from js/Array (.querySelectorAll js/document query))]
       (doseq [el els]
-        (.addEventListener el evt (fn [e] (put! c (keyword (-> e .-target .-id))))))
+        (.addEventListener el evt #(put! c (keyword (-> % .-target .-id)))))
       c))
 
-(def buttons [:red :yellow :blue :green])
-(defn rand-button []
-  (rand-nth buttons))
+(def buttons {:red 220
+              :yellow 440
+              :blue 660
+              :green 880})
 
-(defn new-game [] (conj [] (rand-button)))
+(defn rand-button []
+  (rand-nth (keys buttons)))
+
+(defonce audio-context (js/AudioContext.))
+(defonce gain-node
+  (let [node (.createGain audio-context)]
+    (.connect node (.-destination audio-context))
+    node))
+
+(defn play [f]
+  (let [osc (.createOscillator audio-context)]
+    (.connect osc gain-node)
+    (set! (.-value (.-frequency osc)) f)
+    (.start osc)
+    osc))
+
+(defn stop [osc]
+  (.stop osc))
 
 (defn show-pattern
   ([pattern]
@@ -43,24 +60,34 @@
         (let [elem (.getElementById js/document (name btn))]
          (<! (timeout ms))
          (set! (.-className elem) "button active")
-         (<! (timeout ms))
+         (let [osc (play (buttons btn))]
+           (<! (timeout ms))
+           (stop osc))
          (set! (.-className elem) "button"))))))
-
-(defn demo []
-    (show-pattern (take 12 (cycle buttons)) 50))
 
 (defn correct-so-far [clicks pattern]
   (every?
     (fn [[k v]] (= k v))
     (zipmap clicks pattern)))
 
+(defn new-game [] (conj [] (rand-button)))
+
 (defn start []
-  (let [button-channel (listen-query ".controls button" "click")
+  (let [button-down-channel (listen-query ".controls button" "mousedown")
+        button-up-channel (listen-query ".controls button" "mouseup")
         initial-pattern (new-game)]
     (show-pattern initial-pattern)
     (go-loop [clicks []
               pattern initial-pattern]
-      (let [clicked (<! button-channel)]
+      (let [clicked (<! button-down-channel)
+            osc (play (buttons clicked))]
+        ; TODO deregister from mouseout... or, is there a better/idiomatic core.async
+        ; way to handle sequencing channel events like this? i.e. only pay attention
+        ; to mouseout events *after* we get a mousedown event (but only until we
+        ; get a mouseup event or mouseout event)
+        ; maybe using mix? https://yobriefca.se/blog/2014/06/01/combining-and-controlling-channels-with-core-dot-asyncs-merge-and-mix/
+        (alts! [button-up-channel (listen-query ".controls button" "mouseout")])
+        (stop osc)
         (cond
           (= pattern (conj clicks clicked))
             (let [next-pattern (conj pattern (rand-button))]
@@ -72,27 +99,10 @@
                   (show-pattern initial-pattern)
                   (recur [] initial-pattern)))))))
 
+(defn demo []
+    (show-pattern (take 12 (cycle (keys buttons))) 100))
+
 (go
   (demo)
-  (<! (timeout 1500))
+  (<! (timeout 2500))
   (start))
-
-(defonce synth
-  (let [audio-context (js/AudioContext.)
-        oscillator (.createOscillator audio-context)
-        gain-node (.createGain audio-context)]
-    (set! (.-type "square") oscillator)
-    (.connect oscillator gain-node)
-    (.connect gain-node (.-destination audio-context))
-    oscillator))
-
-(defn play-sound [s f]
-  (set! (-> s .-frequency .-value) f)
-  (.start s))
-
-; (go-loop []
-;   (<! (timeout 1000))
-;   (play-sound synth 220)
-;   (<! (timeout 1000))
-;   (.stop synth) ; cannot call start more than once... disconnect instead?
-;   (recur))
