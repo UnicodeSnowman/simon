@@ -85,12 +85,12 @@
       (let [clicked (<! button-down-channel)
             osc (play (buttons clicked))
             [mouseout-channel remove-mouseout-listener] (listen-query ".controls button" "mouseout")]
-        ; TODO deregister from mouseout... or, is there a better/idiomatic core.async
+        ; TODO is deregistering from mouseout via remove-mouseout-listener the best soluation,
+        ; oris there a better/idiomatic core.async
         ; way to handle sequencing channel events like this? i.e. only pay attention
         ; to mouseout events *after* we get a mousedown event (but only until we
         ; get a mouseup event or mouseout event)
         ; maybe using mix? https://yobriefca.se/blog/2014/06/01/combining-and-controlling-channels-with-core-dot-asyncs-merge-and-mix/
-        ; could also allow listen-query to return tuple of channel and "deregister" fn
         (alts! [button-up-channel mouseout-channel])
         (remove-mouseout-listener)
         (stop osc)
