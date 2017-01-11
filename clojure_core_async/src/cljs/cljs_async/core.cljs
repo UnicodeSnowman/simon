@@ -5,7 +5,9 @@
 ;;; functions in the :source-paths setting of the :builds, it is
 ;;; strongly suggested to add them to the leiningen :source-paths.
 
-;(cemerick.piggieback/cljs-repl (weasel.repl.websocket/repl-env :ip "0.0.0.0" :port 9001))
+; cljs repl
+; (require 'weasel.repl.websocket) in lein repl user ns, then...
+; :Piggieback (weasel.repl.websocket/repl-env)
 
 (ns cljs-async.core
   (:require-macros [cljs.core.async.macros :refer [go go-loop]])
