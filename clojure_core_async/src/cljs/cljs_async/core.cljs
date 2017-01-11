@@ -22,10 +22,11 @@
 
   (defn listen-query [query evt]
     (let [c (chan)
-          els (.from js/Array (.querySelectorAll js/document query))]
+          els (.from js/Array (.querySelectorAll js/document query))
+          handler #(put! c (keyword (-> % .-target .-id)))]
       (doseq [el els]
-        (.addEventListener el evt #(put! c (keyword (-> % .-target .-id)))))
-      c))
+        (.addEventListener el evt handler))
+      [c #(.removeEventListener (first els) evt handler)]))
 
 (def buttons {:red 220
               :yellow 440
@@ -73,20 +74,23 @@
 (defn new-game [] (conj [] (rand-button)))
 
 (defn start []
-  (let [button-down-channel (listen-query ".controls button" "mousedown")
-        button-up-channel (listen-query ".controls button" "mouseup")
+  (let [[button-down-channel _] (listen-query ".controls button" "mousedown")
+        [button-up-channel _] (listen-query ".controls button" "mouseup")
         initial-pattern (new-game)]
     (show-pattern initial-pattern)
     (go-loop [clicks []
               pattern initial-pattern]
       (let [clicked (<! button-down-channel)
-            osc (play (buttons clicked))]
+            osc (play (buttons clicked))
+            [mouseout-channel remove-mouseout-listener] (listen-query ".controls button" "mouseout")]
         ; TODO deregister from mouseout... or, is there a better/idiomatic core.async
         ; way to handle sequencing channel events like this? i.e. only pay attention
         ; to mouseout events *after* we get a mousedown event (but only until we
         ; get a mouseup event or mouseout event)
         ; maybe using mix? https://yobriefca.se/blog/2014/06/01/combining-and-controlling-channels-with-core-dot-asyncs-merge-and-mix/
-        (alts! [button-up-channel (listen-query ".controls button" "mouseout")])
+        ; could also allow listen-query to return tuple of channel and "deregister" fn
+        (alts! [button-up-channel mouseout-channel])
+        (remove-mouseout-listener)
         (stop osc)
         (cond
           (= pattern (conj clicks clicked))
